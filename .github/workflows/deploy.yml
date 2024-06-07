@@ -79,6 +79,9 @@ jobs:
             sudo docker pull ${{ env.DOCKER_IMAGE }}
             sudo docker run -d --name ${{ env.CONTAINER_NAME }} -p ${{ env.CONTAINER_PORT }}:${{ env.CONTAINER_PORT }} ${{ env.DOCKER_IMAGE }} node index.js
 
+      - name: Health check for staging
+        run: curl -o /dev/null -s -w "%{http_code}" http://192.168.105.3:4444/api
+
   deploy-prod:
     runs-on: self-hosted
     needs: deploy-staging
@@ -103,4 +106,7 @@ jobs:
             sudo docker rm ${{ env.CONTAINER_NAME }} || true
             sudo docker pull ${{ env.DOCKER_IMAGE }}
             sudo docker run -d --name ${{ env.CONTAINER_NAME }} -p ${{ env.CONTAINER_PORT }}:${{ env.CONTAINER_PORT }} ${{ env.DOCKER_IMAGE }} node index.js
+
+      - name: Health check for production
+        run: curl -o /dev/null -s -w "%{http_code}" http://ec2-35-180-117-38.eu-west-3.compute.amazonaws.com:4444/api
 
