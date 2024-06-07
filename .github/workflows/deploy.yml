@@ -6,6 +6,19 @@ on:
       - '**'
 
 jobs:
+  test:
+    runs-on: self-hosted
+
+    env:
+      REPO_DIR: 'DevOps-exam'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Run tests
+        run: node --test
+
   build-test:
     runs-on: self-hosted
 
