@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Build, Deploy, and Test
 
 on:
   push:
@@ -25,18 +25,9 @@ jobs:
       - name: Push Docker image
         run: docker push ${{ env.DOCKER_IMAGE }}
 
-  staging:
-    runs-on: self-hosted
-    needs: build-and-push
-
-    env:
-      CONTAINER_NAME: 'alukan-devops'
-      CONTAINER_PORT: '4444'
-      DOCKER_IMAGE: 'ttl.sh/alukan-devops:latest'
-
   test:
     runs-on: self-hosted
-    needs: staging
+    needs: build-and-push
 
     env:
       CONTAINER_NAME: 'alukan-devops'
@@ -56,6 +47,15 @@ jobs:
           script: |
             sudo docker exec ${{ env.CONTAINER_NAME }} node --test
 
+  staging:
+    runs-on: self-hosted
+    needs: test
+
+    env:
+      CONTAINER_NAME: 'alukan-devops'
+      CONTAINER_PORT: '4444'
+      DOCKER_IMAGE: 'ttl.sh/alukan-devops:latest'
+
     steps:
       - name: Deploy to VM
         uses: appleboy/ssh-action@master
@@ -70,3 +70,4 @@ jobs:
             sudo docker rm ${{ env.CONTAINER_NAME }} || true
             sudo docker pull ${{ env.DOCKER_IMAGE }}
             sudo docker run -d --name ${{ env.CONTAINER_NAME }} -p ${{ env.CONTAINER_PORT }}:${{ env.CONTAINER_PORT }} ${{ env.DOCKER_IMAGE }}
+
