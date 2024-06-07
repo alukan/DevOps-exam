@@ -10,7 +10,7 @@ jobs:
     runs-on: self-hosted
 
     env:
-      REPO_DIR: 'DevOps2024'
+      REPO_DIR: 'DevOps-exam'
       DOCKER_IMAGE: 'ttl.sh/alukan-devops:latest'
       CONTAINER_NAME: 'alukan-devops'
       CONTAINER_PORT: '4444'
