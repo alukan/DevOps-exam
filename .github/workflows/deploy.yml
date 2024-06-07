@@ -6,14 +6,12 @@ on:
       - master
 
 jobs:
-  build:
+  build-and-push:
     runs-on: self-hosted
 
     env:
       REPO_DIR: 'DevOps-exam'
       DOCKER_IMAGE: 'ttl.sh/alukan-devops:latest'
-      CONTAINER_NAME: 'alukan-devops'
-      CONTAINER_PORT: '4444'
 
     steps:
       - name: Checkout repository
@@ -21,11 +19,22 @@ jobs:
         with:
           ref: master
 
-      - name: Build and push Docker image
-        run: |
-          docker build -t ${{ env.DOCKER_IMAGE }} .
-          docker push ${{ env.DOCKER_IMAGE }}
+      - name: Build Docker image
+        run: docker build -t ${{ env.DOCKER_IMAGE }} .
 
+      - name: Push Docker image
+        run: docker push ${{ env.DOCKER_IMAGE }}
+
+  staging:
+    runs-on: self-hosted
+    needs: build-and-push
+
+    env:
+      CONTAINER_NAME: 'alukan-devops'
+      CONTAINER_PORT: '4444'
+      DOCKER_IMAGE: 'ttl.sh/alukan-devops:latest'
+
+    steps:
       - name: Deploy to VM
         uses: appleboy/ssh-action@master
         with:
@@ -39,5 +48,24 @@ jobs:
             sudo docker rm ${{ env.CONTAINER_NAME }} || true
             sudo docker pull ${{ env.DOCKER_IMAGE }}
             sudo docker run -d --name ${{ env.CONTAINER_NAME }} -p ${{ env.CONTAINER_PORT }}:${{ env.CONTAINER_PORT }} ${{ env.DOCKER_IMAGE }}
+  test:
+    runs-on: self-hosted
+    needs: staging
 
+    env:
+      CONTAINER_NAME: 'alukan-devops'
 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          ref: master
+
+      - name: Run tests in Docker container
+        uses: appleboy/ssh-action@master
+        with:
+          host: 192.168.105.3
+          username: vagrant
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo docker exec ${{ env.CONTAINER_NAME }} node --test
