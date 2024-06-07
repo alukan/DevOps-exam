@@ -30,7 +30,7 @@ jobs:
     needs: build-and-push
 
     env:
-      CONTAINER_NAME: 'alukan-devops'
+      CONTAINER_NAME: 'alukan-devops-test'
       DOCKER_IMAGE: 'ttl.sh/alukan-devops:latest'
 
     steps:
@@ -48,9 +48,9 @@ jobs:
           script: |
             sudo systemctl start docker
             sudo docker ps -a
-            sudo docker stop ${{ env.CONTAINER_NAME }}-test || true
-            sudo docker rm ${{ env.CONTAINER_NAME }}-test || true
-            sudo docker run -d --name ${{ env.CONTAINER_NAME }}-test ${{ env.DOCKER_IMAGE }}
+            sudo docker stop ${{ env.CONTAINER_NAME }} || true
+            sudo docker rm ${{ env.CONTAINER_NAME }} || true
+            sudo docker run -d --name ${{ env.CONTAINER_NAME }} ${{ env.DOCKER_IMAGE }} sleep infinity
 
       - name: Run tests in Docker container
         uses: appleboy/ssh-action@master
@@ -59,7 +59,7 @@ jobs:
           username: vagrant
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            sudo docker exec ${{ env.CONTAINER_NAME }}-test node --test
+            sudo docker exec ${{ env.CONTAINER_NAME }} env NODE_ENV=test node --test
 
       - name: Stop and remove test container
         uses: appleboy/ssh-action@master
@@ -68,8 +68,8 @@ jobs:
           username: vagrant
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            sudo docker stop ${{ env.CONTAINER_NAME }}-test
-            sudo docker rm ${{ env.CONTAINER_NAME }}-test
+            sudo docker stop ${{ env.CONTAINER_NAME }}
+            sudo docker rm ${{ env.CONTAINER_NAME }}
 
   staging:
     runs-on: self-hosted
@@ -93,5 +93,5 @@ jobs:
             sudo docker stop ${{ env.CONTAINER_NAME }} || true
             sudo docker rm ${{ env.CONTAINER_NAME }} || true
             sudo docker pull ${{ env.DOCKER_IMAGE }}
-            sudo docker run -d --name ${{ env.CONTAINER_NAME }} -p ${{ env.CONTAINER_PORT }}:${{ env.CONTAINER_PORT }} ${{ env.DOCKER_IMAGE }}
+            sudo docker run -d --name ${{ env.CONTAINER_NAME }} -p ${{ env.CONTAINER_PORT }}:${{ env.CONTAINER_PORT }} ${{ env.DOCKER_IMAGE }} node index.js
 
