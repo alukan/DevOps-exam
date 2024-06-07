@@ -37,7 +37,7 @@ jobs:
       - name: Push Docker image
         run: docker push ${{ env.DOCKER_IMAGE }}
 
-  deploy:
+  deploy-staging:
     runs-on: self-hosted
     needs: build-test
 
@@ -47,11 +47,35 @@ jobs:
       DOCKER_IMAGE: 'ttl.sh/alukan-devops:latest'
 
     steps:
-      - name: Deploy to VM
+      - name: Deploy to Staging VM
         uses: appleboy/ssh-action@master
         with:
           host: 192.168.105.3
           username: vagrant
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo systemctl start docker
+            sudo docker ps -a
+            sudo docker stop ${{ env.CONTAINER_NAME }} || true
+            sudo docker rm ${{ env.CONTAINER_NAME }} || true
+            sudo docker pull ${{ env.DOCKER_IMAGE }}
+            sudo docker run -d --name ${{ env.CONTAINER_NAME }} -p ${{ env.CONTAINER_PORT }}:${{ env.CONTAINER_PORT }} ${{ env.DOCKER_IMAGE }} node index.js
+
+  deploy-prod:
+    runs-on: self-hosted
+    needs: deploy-staging
+
+    env:
+      CONTAINER_NAME: 'alukan-devops'
+      CONTAINER_PORT: '4444'
+      DOCKER_IMAGE: 'ttl.sh/alukan-devops:latest'
+
+    steps:
+      - name: Deploy to Production VM
+        uses: appleboy/ssh-action@master
+        with:
+          host: ec2-35-180-117-38.eu-west-3.compute.amazonaws.com
+          username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             sudo systemctl start docker
