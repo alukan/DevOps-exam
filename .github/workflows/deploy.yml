@@ -16,11 +16,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Install dependencies
+        run: npm install
+
       - name: Run tests
         run: node --test
 
   build-test:
     runs-on: self-hosted
+    needs: test
 
     env:
       REPO_DIR: 'DevOps-exam'
@@ -30,6 +34,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: npm install
 
       - name: Build Docker image
         run: docker build -t ${{ env.DOCKER_IMAGE }} .
