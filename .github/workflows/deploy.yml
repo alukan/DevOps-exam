@@ -6,12 +6,13 @@ on:
       - master
 
 jobs:
-  build-and-push:
+  build-test:
     runs-on: self-hosted
 
     env:
       REPO_DIR: 'DevOps-exam'
       DOCKER_IMAGE: 'ttl.sh/alukan-devops:latest'
+      CONTAINER_NAME: 'alukan-devops-test'
 
     steps:
       - name: Checkout repository
@@ -22,58 +23,23 @@ jobs:
       - name: Build Docker image
         run: docker build -t ${{ env.DOCKER_IMAGE }} .
 
+      - name: Start Docker container for testing
+        run: docker run -d --name ${{ env.CONTAINER_NAME }} ${{ env.DOCKER_IMAGE }} sleep infinity
+
+      - name: Run tests in Docker container
+        run: docker exec ${{ env.CONTAINER_NAME }} env NODE_ENV=test node --test
+
+      - name: Stop and remove test container
+        run: |
+          docker stop ${{ env.CONTAINER_NAME }}
+          docker rm ${{ env.CONTAINER_NAME }}
+
       - name: Push Docker image
         run: docker push ${{ env.DOCKER_IMAGE }}
 
-  test:
+  deploy:
     runs-on: self-hosted
-    needs: build-and-push
-
-    env:
-      CONTAINER_NAME: 'alukan-devops-test'
-      DOCKER_IMAGE: 'ttl.sh/alukan-devops:latest'
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-        with:
-          ref: master
-
-      - name: Start Docker container for testing
-        uses: appleboy/ssh-action@master
-        with:
-          host: 192.168.105.3
-          username: vagrant
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            sudo systemctl start docker
-            sudo docker ps -a
-            sudo docker stop ${{ env.CONTAINER_NAME }} || true
-            sudo docker rm ${{ env.CONTAINER_NAME }} || true
-            sudo docker run -d --name ${{ env.CONTAINER_NAME }} ${{ env.DOCKER_IMAGE }} sleep infinity
-
-      - name: Run tests in Docker container
-        uses: appleboy/ssh-action@master
-        with:
-          host: 192.168.105.3
-          username: vagrant
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            sudo docker exec ${{ env.CONTAINER_NAME }} env NODE_ENV=test node --test
-
-      - name: Stop and remove test container
-        uses: appleboy/ssh-action@master
-        with:
-          host: 192.168.105.3
-          username: vagrant
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            sudo docker stop ${{ env.CONTAINER_NAME }}
-            sudo docker rm ${{ env.CONTAINER_NAME }}
-
-  staging:
-    runs-on: self-hosted
-    needs: test
+    needs: build-test
 
     env:
       CONTAINER_NAME: 'alukan-devops'
