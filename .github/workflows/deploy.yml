@@ -31,12 +31,26 @@ jobs:
 
     env:
       CONTAINER_NAME: 'alukan-devops'
+      DOCKER_IMAGE: 'ttl.sh/alukan-devops:latest'
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
           ref: master
+
+      - name: Start Docker container for testing
+        uses: appleboy/ssh-action@master
+        with:
+          host: 192.168.105.3
+          username: vagrant
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo systemctl start docker
+            sudo docker ps -a
+            sudo docker stop ${{ env.CONTAINER_NAME }}-test || true
+            sudo docker rm ${{ env.CONTAINER_NAME }}-test || true
+            sudo docker run -d --name ${{ env.CONTAINER_NAME }}-test ${{ env.DOCKER_IMAGE }}
 
       - name: Run tests in Docker container
         uses: appleboy/ssh-action@master
@@ -45,8 +59,17 @@ jobs:
           username: vagrant
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            sudo docker ps -a
-            sudo docker exec alukan-devops node --test
+            sudo docker exec ${{ env.CONTAINER_NAME }}-test node --test
+
+      - name: Stop and remove test container
+        uses: appleboy/ssh-action@master
+        with:
+          host: 192.168.105.3
+          username: vagrant
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo docker stop ${{ env.CONTAINER_NAME }}-test
+            sudo docker rm ${{ env.CONTAINER_NAME }}-test
 
   staging:
     runs-on: self-hosted
