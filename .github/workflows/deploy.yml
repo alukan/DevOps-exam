@@ -80,20 +80,20 @@ jobs:
             sudo docker run -d --name ${{ env.CONTAINER_NAME }} -p ${{ env.CONTAINER_PORT }}:${{ env.CONTAINER_PORT }} ${{ env.DOCKER_IMAGE }} node index.js
 
   health-check:
-  runs-on: self-hosted
-  needs: deploy-staging
-  steps:
-    - name: Wait for service to start
-      run: sleep 30
-    - name: Health Check
-      run: |
-        response_code=$(curl -o /dev/null -s -w "%{http_code}" http://192.168.105.3:4444/api)
-        if [ "$response_code" -eq 200 ]; then
-          echo "Health check passed!"
-        else
-          echo "Health check failed with response code $response_code"
-          exit 1
-        fi
+    runs-on: self-hosted
+    needs: deploy-staging
+    steps:
+      - name: Wait for service to start
+        run: sleep 30
+      - name: Health Check
+        run: |
+          response_code=$(curl -o /dev/null -s -w "%{http_code}" http://192.168.105.3:4444/api)
+          if [ "$response_code" -eq 200 ]; then
+            echo "Health check passed!"
+          else
+            echo "Health check failed with response code $response_code"
+            exit 1
+          fi
 
   deploy-prod:
     runs-on: self-hosted
