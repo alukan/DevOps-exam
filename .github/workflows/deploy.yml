@@ -45,6 +45,10 @@ jobs:
           username: vagrant
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            sudo systemctl start docker
+            sudo docker ps -a
+            sudo docker stop ${{ env.CONTAINER_NAME }} || true
+            sudo docker rm ${{ env.CONTAINER_NAME }} || true
             sudo docker exec ${{ env.CONTAINER_NAME }} node --test
 
   staging:
