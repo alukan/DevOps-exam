@@ -34,20 +34,6 @@ jobs:
       CONTAINER_PORT: '4444'
       DOCKER_IMAGE: 'ttl.sh/alukan-devops:latest'
 
-    steps:
-      - name: Deploy to VM
-        uses: appleboy/ssh-action@master
-        with:
-          host: 192.168.105.3
-          username: vagrant
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            sudo systemctl start docker
-            sudo docker ps -a
-            sudo docker stop ${{ env.CONTAINER_NAME }} || true
-            sudo docker rm ${{ env.CONTAINER_NAME }} || true
-            sudo docker pull ${{ env.DOCKER_IMAGE }}
-            sudo docker run -d --name ${{ env.CONTAINER_NAME }} -p ${{ env.CONTAINER_PORT }}:${{ env.CONTAINER_PORT }} ${{ env.DOCKER_IMAGE }}
   test:
     runs-on: self-hosted
     needs: staging
@@ -69,3 +55,18 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             sudo docker exec ${{ env.CONTAINER_NAME }} node --test
+
+    steps:
+      - name: Deploy to VM
+        uses: appleboy/ssh-action@master
+        with:
+          host: 192.168.105.3
+          username: vagrant
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo systemctl start docker
+            sudo docker ps -a
+            sudo docker stop ${{ env.CONTAINER_NAME }} || true
+            sudo docker rm ${{ env.CONTAINER_NAME }} || true
+            sudo docker pull ${{ env.DOCKER_IMAGE }}
+            sudo docker run -d --name ${{ env.CONTAINER_NAME }} -p ${{ env.CONTAINER_PORT }}:${{ env.CONTAINER_PORT }} ${{ env.DOCKER_IMAGE }}
